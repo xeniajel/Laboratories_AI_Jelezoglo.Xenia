@@ -12,8 +12,13 @@ public class EnemyMove : MonoBehaviour
     int CurrentIndex = 0;
     GameObject CurrentPath;
 
-    public float MoveSpeed = 1;
-    public float WaitTime = 2;
+    [SerializeField] private float MoveSpeed = 1;
+    [SerializeField] private float WaitTime = 2;
+    private GameObject player;
+
+    [SerializeField] private float DetectionRange = 5f;
+    private bool hasLineOfSight = false;
+    private Vector2 facingDirection = Vector2.right;
 
     private void Awake()
     {
@@ -25,6 +30,7 @@ public class EnemyMove : MonoBehaviour
 
     private void Start()
     {
+        player = GameObject.FindGameObjectWithTag("Player");
         StartCoroutine(MoveTo());
     }
 
@@ -75,10 +81,12 @@ public class EnemyMove : MonoBehaviour
         if (DirectionToPath.x < 0)
         {
             SpriteRendererComponent.flipX = true;
+            facingDirection = Vector2.left;
         }
         else if (DirectionToPath.x > 0)
         {
             SpriteRendererComponent.flipX = false;
+            facingDirection = Vector2.right;
         }
     }
 
@@ -86,5 +94,53 @@ public class EnemyMove : MonoBehaviour
     {
         Vector2 Direction2D = Point2 - Point1;
         return Direction2D.normalized;
+    }
+    void Update()
+    {
+        
+    }
+
+    void FixedUpdate()
+    {
+        float distanceToPlayer = Vector2.Distance (
+            transform.position,
+            player.transform.position
+        );
+
+        if (distanceToPlayer <= DetectionRange)
+        {
+            Vector2 directionToPlayer = (player.transform.position - transform.position).normalized;
+
+            float angle = Vector2.Angle(facingDirection, directionToPlayer);
+
+            if(angle <= 90f)
+            {
+                RaycastHit2D ray = Physics2D.Raycast(
+                    transform.position,
+                    directionToPlayer
+                );
+
+                if (ray.collider != null && ray.collider.CompareTag("Player"))
+                {
+                    hasLineOfSight = true;
+                    Debug.DrawLine(transform.position, player.transform.position, Color.green);
+                }
+                else
+                {
+                    hasLineOfSight = false;
+                    Debug.DrawLine(transform.position, player.transform.position, Color.red);
+                }
+            }
+            else
+            {
+                hasLineOfSight = false;
+                Debug.DrawLine(transform.position, player.transform.position, Color.red);
+            }
+        }
+        else
+        {
+            hasLineOfSight = false;
+            Debug.DrawLine(transform.position, player.transform.position, Color.red);
+        }
     }
 }
