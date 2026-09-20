@@ -18,6 +18,7 @@ public class EnemyMove : MonoBehaviour
 
     [SerializeField] private float DetectionRange = 5f;
     private bool hasLineOfSight = false;
+    private bool isChasing = false;
     private Vector2 facingDirection = Vector2.right;
 
     private void Awake()
@@ -36,6 +37,9 @@ public class EnemyMove : MonoBehaviour
 
     IEnumerator MoveTo()
     {
+        if (isChasing)
+            yield break;
+
         AnimatorComponent.Play("Idle");
 
         yield return new WaitForSeconds(WaitTime);
@@ -94,11 +98,27 @@ public class EnemyMove : MonoBehaviour
     }
     void Update()
     {
-        
+        if (isChasing)
+        {
+            transform.position = Vector2.MoveTowards(
+                transform.position,
+                player.transform.position,
+                MoveSpeed * Time.deltaTime
+            );
+        }
     }
 
     void FixedUpdate()
     {
+        if (hasLineOfSight)
+        {
+            isChasing = true;
+        }
+        else
+        {
+            isChasing = false;
+        }
+
         float distanceToPlayer = Vector2.Distance (
             transform.position,
             player.transform.position
@@ -120,23 +140,27 @@ public class EnemyMove : MonoBehaviour
                 if (ray.collider != null && ray.collider.CompareTag("Player"))
                 {
                     hasLineOfSight = true;
+                    isChasing = true;
                     Debug.DrawLine(transform.position, player.transform.position, Color.green);
                 }
                 else
                 {
                     hasLineOfSight = false;
+                    isChasing = false;
                     Debug.DrawLine(transform.position, player.transform.position, Color.red);
                 }
             }
             else
             {
                 hasLineOfSight = false;
+                isChasing = false;
                 Debug.DrawLine(transform.position, player.transform.position, Color.red);
             }
         }
         else
         {
             hasLineOfSight = false;
+            isChasing = false;
             Debug.DrawLine(transform.position, player.transform.position, Color.red);
         }
     }
