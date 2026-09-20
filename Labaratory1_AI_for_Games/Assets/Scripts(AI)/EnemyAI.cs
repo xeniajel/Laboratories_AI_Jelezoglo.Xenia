@@ -36,12 +36,10 @@ public class EnemyMove : MonoBehaviour
 
     IEnumerator MoveTo()
     {
-        // Останавливаемся
         AnimatorComponent.Play("Idle");
 
         yield return new WaitForSeconds(WaitTime);
 
-        // Начинаем движение
         AnimatorComponent.Play("Patrol");
 
         while (Vector2.Distance(transform.position, CurrentPath.transform.position) > 0.05f)
@@ -58,7 +56,6 @@ public class EnemyMove : MonoBehaviour
             yield return null;
         }
 
-        // Пришли к точке
         ChangePlatformDirectionMovement();
     }
 
