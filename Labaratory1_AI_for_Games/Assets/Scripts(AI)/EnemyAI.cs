@@ -16,7 +16,12 @@ public class EnemyMove : MonoBehaviour
     [SerializeField] private float WaitTime = 2;
     private GameObject player;
 
+    [SerializeField] private float AttackCooldown = 0.6f;
     [SerializeField] private float DetectionRange = 5f;
+    [SerializeField] private float AttackRange = 1.5f;
+    private bool isAttacking = false;
+
+
     private bool hasLineOfSight = false;
     private bool isChasing = false;
     private Vector2 facingDirection = Vector2.right;
@@ -37,9 +42,6 @@ public class EnemyMove : MonoBehaviour
 
     IEnumerator MoveTo()
     {
-        if (isChasing)
-            yield break;
-
         AnimatorComponent.Play("Idle");
 
         yield return new WaitForSeconds(WaitTime);
@@ -100,12 +102,33 @@ public class EnemyMove : MonoBehaviour
     {
         if (isChasing)
         {
-            transform.position = Vector2.MoveTowards(
+            float distanceToPlayer = Vector2.Distance(
+                transform.position,
+                player.transform.position
+            );
+
+            if (distanceToPlayer <= AttackRange && !isAttacking)
+            {
+                isAttacking = true;
+                AnimatorComponent.SetTrigger("Attack");
+                StartCoroutine(AttackRoutine());
+            }
+            if (!isAttacking)
+            {
+                transform.position = Vector2.MoveTowards(
                 transform.position,
                 player.transform.position,
-                MoveSpeed * Time.deltaTime
-            );
+                MoveSpeed * Time.deltaTime);
+            }
         }
+    }
+
+    IEnumerator AttackRoutine()
+    {
+        yield return new WaitForSeconds(AttackCooldown);
+
+        isAttacking = false;
+        AnimatorComponent.Play("Patrol");
     }
 
     void FixedUpdate()
@@ -119,7 +142,7 @@ public class EnemyMove : MonoBehaviour
             isChasing = false;
         }
 
-        float distanceToPlayer = Vector2.Distance (
+        float distanceToPlayer = Vector2.Distance(
             transform.position,
             player.transform.position
         );
@@ -130,7 +153,7 @@ public class EnemyMove : MonoBehaviour
 
             float angle = Vector2.Angle(facingDirection, directionToPlayer);
 
-            if(angle <= 90f)
+            if (angle <= 90f)
             {
                 RaycastHit2D ray = Physics2D.Raycast(
                     transform.position,
