@@ -25,6 +25,12 @@ public class EnemyMove : MonoBehaviour
     private bool hasLineOfSight = false;
     private bool isChasing = false;
     private Vector2 facingDirection = Vector2.right;
+    [SerializeField] private float ChaseSpeed = 2f;
+
+    private Vector2 lastPlayerPosition;
+    private bool isSearching = false;
+    [SerializeField] private float SearchTime = 3f;
+    private bool searchRoutineStarted = false;
 
     private void Awake()
     {
@@ -50,6 +56,12 @@ public class EnemyMove : MonoBehaviour
 
         while (Vector2.Distance(transform.position, CurrentPath.transform.position) > 0.05f)
         {
+            if (isChasing || isSearching)
+            {
+                yield return null;
+                continue;
+            }
+
             Vector2 direction = Direction2Points2D(
                 transform.position,
                 CurrentPath.transform.position
@@ -118,7 +130,36 @@ public class EnemyMove : MonoBehaviour
                 transform.position = Vector2.MoveTowards(
                 transform.position,
                 player.transform.position,
-                MoveSpeed * Time.deltaTime);
+                ChaseSpeed * Time.deltaTime);
+            }
+        }
+
+        if (isSearching)
+        {
+            float distanceToLastPosition = Vector2.Distance(
+            transform.position,
+            lastPlayerPosition
+            );
+
+            if (distanceToLastPosition > 0.05f)
+            {
+                transform.position = Vector2.MoveTowards(
+                    transform.position,
+                    lastPlayerPosition,
+                    MoveSpeed * Time.deltaTime
+                );
+
+                AnimatorComponent.Play("Patrol");
+            }
+            else
+            {
+                AnimatorComponent.Play("Idle");
+
+                if (!searchRoutineStarted)
+                {
+                    searchRoutineStarted = true;
+                    StartCoroutine(SearchRoutine());
+                }
             }
         }
     }
@@ -131,16 +172,20 @@ public class EnemyMove : MonoBehaviour
         AnimatorComponent.Play("Patrol");
     }
 
+    IEnumerator SearchRoutine()
+    {
+        AnimatorComponent.Play("Idle");
+
+        yield return new WaitForSeconds(SearchTime);
+
+        isSearching = false;
+        searchRoutineStarted = false;
+        AnimatorComponent.Play("Patrol");
+    }
+
     void FixedUpdate()
     {
-        if (hasLineOfSight)
-        {
-            isChasing = true;
-        }
-        else
-        {
-            isChasing = false;
-        }
+        bool wasChasing = isChasing;
 
         float distanceToPlayer = Vector2.Distance(
             transform.position,
@@ -163,12 +208,18 @@ public class EnemyMove : MonoBehaviour
                 if (ray.collider != null && ray.collider.CompareTag("Player"))
                 {
                     hasLineOfSight = true;
+                    isSearching = false;
                     isChasing = true;
+                    lastPlayerPosition = player.transform.position;
                     Debug.DrawLine(transform.position, player.transform.position, Color.green);
                 }
                 else
                 {
                     hasLineOfSight = false;
+                    if (wasChasing && !isSearching)
+                    {
+                        isSearching = true;
+                    }
                     isChasing = false;
                     Debug.DrawLine(transform.position, player.transform.position, Color.red);
                 }
@@ -176,6 +227,10 @@ public class EnemyMove : MonoBehaviour
             else
             {
                 hasLineOfSight = false;
+                if (wasChasing && !isSearching)
+                {
+                    isSearching = true;
+                }
                 isChasing = false;
                 Debug.DrawLine(transform.position, player.transform.position, Color.red);
             }
@@ -183,6 +238,10 @@ public class EnemyMove : MonoBehaviour
         else
         {
             hasLineOfSight = false;
+            if (wasChasing && !isSearching)
+            {
+                isSearching = true;
+            }
             isChasing = false;
             Debug.DrawLine(transform.position, player.transform.position, Color.red);
         }
