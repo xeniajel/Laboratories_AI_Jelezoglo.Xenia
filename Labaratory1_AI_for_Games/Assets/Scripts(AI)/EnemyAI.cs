@@ -6,6 +6,8 @@ public class EnemyMove : MonoBehaviour
 {
     Animator AnimatorComponent;
     SpriteRenderer SpriteRendererComponent;
+    Collider2D EnemyCollider;
+    private SpriteRenderer playerSpriteRenderer;
 
     public List<GameObject> Paths;
 
@@ -32,10 +34,13 @@ public class EnemyMove : MonoBehaviour
     [SerializeField] private float SearchTime = 3f;
     private bool searchRoutineStarted = false;
 
+    private bool isDead = false;
+
     private void Awake()
     {
         AnimatorComponent = GetComponent<Animator>();
         SpriteRendererComponent = GetComponent<SpriteRenderer>();
+        EnemyCollider = GetComponent<Collider2D>();
 
         CurrentPath = Paths[CurrentIndex];
     }
@@ -43,6 +48,7 @@ public class EnemyMove : MonoBehaviour
     private void Start()
     {
         player = GameObject.FindGameObjectWithTag("Player");
+        playerSpriteRenderer = player.GetComponent<SpriteRenderer>();
         StartCoroutine(MoveTo());
     }
 
@@ -124,6 +130,7 @@ public class EnemyMove : MonoBehaviour
                 isAttacking = true;
                 AnimatorComponent.SetTrigger("Attack");
                 StartCoroutine(AttackRoutine());
+                StartCoroutine(PlayerHitEffect());
             }
             if (!isAttacking)
             {
@@ -172,6 +179,17 @@ public class EnemyMove : MonoBehaviour
         AnimatorComponent.Play("Patrol");
     }
 
+    IEnumerator PlayerHitEffect()
+    {
+        Debug.Log("Player hit!");
+
+        playerSpriteRenderer.color = Color.red;
+
+        yield return new WaitForSeconds(1f);
+
+        playerSpriteRenderer.color = Color.white;
+    }
+
     IEnumerator SearchRoutine()
     {
         AnimatorComponent.Play("Idle");
@@ -200,12 +218,30 @@ public class EnemyMove : MonoBehaviour
 
             if (angle <= 90f)
             {
-                RaycastHit2D ray = Physics2D.Raycast(
+                RaycastHit2D[] rays = Physics2D.RaycastAll(
                     transform.position,
-                    directionToPlayer
+                    directionToPlayer,
+                    DetectionRange
                 );
 
-                if (ray.collider != null && ray.collider.CompareTag("Player"))
+                bool playerDetected = false;
+
+                foreach (RaycastHit2D hit in rays)
+                {
+                    if (hit.collider == EnemyCollider)
+                    {
+                        continue;
+                    }
+
+                    if (hit.collider.CompareTag("Player"))
+                    {
+                        playerDetected = true;
+                        break;
+                    }
+                }
+                ;
+
+                if (playerDetected)
                 {
                     hasLineOfSight = true;
                     isSearching = false;
@@ -245,5 +281,15 @@ public class EnemyMove : MonoBehaviour
             isChasing = false;
             Debug.DrawLine(transform.position, player.transform.position, Color.red);
         }
+    }
+    public void Die()
+    {
+        if (isDead)
+            return;
+
+        isDead = true;
+
+        AnimatorComponent.Play("Die");
+        Destroy(gameObject, 1f);
     }
 }
