@@ -45,7 +45,7 @@ public class EnemyMove : MonoBehaviour
         CurrentPath = Paths[CurrentIndex];
     }
 
-    private void Start()
+    protected virtual void Start()
     {
         player = GameObject.FindGameObjectWithTag("Player");
         playerSpriteRenderer = player.GetComponent<SpriteRenderer>();
@@ -118,6 +118,9 @@ public class EnemyMove : MonoBehaviour
     }
     void Update()
     {
+        if (isDead)
+            return;
+
         if (isChasing)
         {
             float distanceToPlayer = Vector2.Distance(
@@ -201,7 +204,7 @@ public class EnemyMove : MonoBehaviour
         AnimatorComponent.Play("Patrol");
     }
 
-    void FixedUpdate()
+    protected virtual void FixedUpdate()
     {
         bool wasChasing = isChasing;
 
