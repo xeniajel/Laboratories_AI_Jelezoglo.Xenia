@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class EnemyMove : MonoBehaviour
+public class EnemyAI : MonoBehaviour
 {
     Animator AnimatorComponent;
     SpriteRenderer SpriteRendererComponent;
@@ -25,7 +25,7 @@ public class EnemyMove : MonoBehaviour
 
 
     private bool hasLineOfSight = false;
-    private bool isChasing = false;
+    protected bool isChasing = false;
     private Vector2 facingDirection = Vector2.right;
     [SerializeField] private float ChaseSpeed = 2f;
 
@@ -62,6 +62,9 @@ public class EnemyMove : MonoBehaviour
 
         while (Vector2.Distance(transform.position, CurrentPath.transform.position) > 0.05f)
         {
+            if (isDead)
+                yield break;
+
             if (isChasing || isSearching)
             {
                 yield return null;
@@ -137,10 +140,24 @@ public class EnemyMove : MonoBehaviour
             }
             if (!isAttacking)
             {
+                Vector2 directionToPlayer =
+                    player.transform.position - transform.position;
+
+                if (directionToPlayer.x < 0)
+                {
+                    SpriteRendererComponent.flipX = true;
+                    facingDirection = Vector2.left;
+                }
+                else if (directionToPlayer.x > 0)
+                {
+                    SpriteRendererComponent.flipX = false;
+                    facingDirection = Vector2.right;
+                }
+
                 transform.position = Vector2.MoveTowards(
-                transform.position,
-                player.transform.position,
-                ChaseSpeed * Time.deltaTime);
+                    transform.position,
+                    player.transform.position,
+                    ChaseSpeed * Time.deltaTime);
             }
         }
 

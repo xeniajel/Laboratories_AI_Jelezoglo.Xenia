@@ -54,7 +54,7 @@ public class PlayerMovement : MonoBehaviour
             {
                 Debug.Log("Enemy hit!");
 
-                EnemyMove enemyScript = enemy.GetComponent<EnemyMove>();
+                EnemyAI enemyScript = enemy.GetComponent<EnemyAI>();
 
                 if (enemyScript != null)
                 {
